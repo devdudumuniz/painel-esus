@@ -30,11 +30,13 @@ class CreateCacheUseCase:
                 pprint(r.text())
 
     async def _get_all(self, session, urls):
-        tasks = []
-        for url in urls:
-            task = asyncio.create_task(self._get_page(session, url))
-            tasks.append(task)
-        results = await asyncio.gather(*tasks)
+        results = []
+        chunk_size = 1000
+        for i in range(0, len(urls), chunk_size):
+            chunk = urls[i:i + chunk_size]
+            tasks = [asyncio.create_task(self._get_page(session, url)) for url in chunk]
+            chunk_results = await asyncio.gather(*tasks)
+            results.extend(chunk_results)
         return results
 
     async def _main(self, urls, token):
