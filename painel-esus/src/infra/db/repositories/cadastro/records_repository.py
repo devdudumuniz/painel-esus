@@ -191,7 +191,8 @@ class RecordsRepository:
         ).df()
 
         users = users.to_dict(orient="records")
-        total = len(con.sql(pessoas_sql + sql_where).fetchall())
+        total_query = f"SELECT COUNT(*) FROM ({pessoas_sql} {sql_where})"
+        total = con.sql(total_query).fetchone()[0]
         return {
                 "itemsCount": total,
                 "itemsPerPage": pagesize,
