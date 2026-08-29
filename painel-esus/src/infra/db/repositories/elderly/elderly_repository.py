@@ -7,7 +7,6 @@ paginação/exportação e anonimização de dados sensíveis.
 
 import json
 
-import duckdb
 import pandas as pd
 from src.env.conf import getenv
 from src.infra.db.repositories.elderly.sqls import (
@@ -27,41 +26,39 @@ from src.infra.db.repositories.elderly.sqls import (
     nominal_download,
 )
 from src.infra.db.repositories.utils.str_utils import anonymize_data_frame
+from src.infra.db.settings.connection_duckdb import DuckDbHandler
 from src.infra.db.settings.connection_local import DBConnectionHandler
 
 
 class ElderlyRepository:
     """Leitura para indicadores e listas de idosos."""
     def __init__(self):
+        self.session = DuckDbHandler()
         self.mock_data = getenv("MOCK", False, False) == 'True'
 
     def total_ubs(self, cnes: int = None, equipe: int = None):
         """Retorna totais por UBS para idosos."""
         sql = get_total_ubs(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def total_card(self, cnes: int = None, equipe: int = None):
             """Retorna totais agrupado por localização."""
             sql = get_total_card(cnes,equipe)
-            con = duckdb.connect()
-            result = con.sql(sql).fetchall()
+            result = self.session.fetchall(sql)
             return result
 
 
     def total_medical_cares(self, cnes: int = None, equipe: int = None):
         """Total de atendimentos médicos a idosos."""
         sql = get_medical_cares(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def by_gender(self, cnes: int = None, equipe: int = None):
         """Distribuição por sexo entre idosos."""
         sql = by_gender(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         if len(result) > 0 and '100' in result[0][0]:
             result = [list(result[2:])+list(result[:2]) ][0]
         return result
@@ -69,57 +66,49 @@ class ElderlyRepository:
     def by_race(self, cnes: int = None, equipe: int = None):
         """Distribuição por raça/cor entre idosos."""
         sql = by_race(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def medical_appointment(self, cnes: int = None, equipe: int = None):
         """Consultas médicas realizadas com idosos."""
         sql = medical_appointments(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def height_records(self, cnes: int = None, equipe: int = None):
         """Registros de altura no acompanhamento do idoso."""
         sql = height_records(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def acs_visits(self, cnes: int = None, equipe: int = None):
         """Visitas de ACS a idosos."""
         sql = acs_visits(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def creatinine(self, cnes: int = None, equipe: int = None):
         """Exames de creatinina e datas relacionadas para idosos."""
         sql = creatinine(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def dentist_appointment(self, cnes: int = None, equipe: int = None):
         """Atendimentos odontológicos com idosos."""
         sql = dentist_appointment(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def ivcf_20(self, cnes: int = None, equipe: int = None):
         """Indicador IVCF-20 (fragilidade) para idosos."""
         sql = ivcf_20(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
     def influenza_vaccines(self, cnes: int = None, equipe: int = None):
         """Vacinação contra influenza em idosos."""
         sql = influenza_vaccines(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
+        result = self.session.fetchall(sql)
         return result
 
 
@@ -145,7 +134,6 @@ class ElderlyRepository:
         """
         page = int(page) if page is not None else 0
         pagesize = int(pagesize) if pagesize is not None else 0
-        con = duckdb.connect()
         pessoas_sql = get_elderly_base()
         conditions = []
         or_conditions = []
@@ -210,14 +198,14 @@ class ElderlyRepository:
             order = 'order by '
             order += ", ".join(order_list)
 
-        users = con.sql(
+        users = self.session.fetch_df(
             pessoas_sql
             + sql_where
             + f"  {order} LIMIT {limit} OFFSET {offset} "
-        ).df()
+        )
 
         users = users.to_dict(orient="records")
-        total = len(con.sql(pessoas_sql + sql_where).fetchall())
+        total = len(self.session.fetchall(pessoas_sql + sql_where))
         return {
             "itemsCount": total,
             "itemsPerPage": pagesize,
@@ -229,7 +217,6 @@ class ElderlyRepository:
     def find_all_download(self, cnes: int = None, equipe: int = None):
         """Gera DataFrame para exportação com anonimização de dados."""
         sql = nominal_download(cnes,equipe)
-        con = duckdb.connect()
-        response = con.sql(sql).df()
+        response = self.session.fetch_df(sql)
         response=response.apply(anonymize_data_frame, axis=1)
         return response
