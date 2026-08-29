@@ -10,22 +10,20 @@ import json
 import duckdb
 import pandas as pd
 from src.env.conf import getenv
-from src.infra.db.repositories.elderly.sqls import (
-    acs_visits,
-    by_gender,
-    by_race,
-    creatinine,
-    dentist_appointment,
-    get_elderly_base,
-    get_medical_cares,
-    get_total_card,
-    get_total_ubs,
-    height_records,
-    influenza_vaccines,
-    ivcf_20,
-    medical_appointments,
-    nominal_download,
-)
+from src.infra.db.repositories.elderly.sqls.acs_visits import acs_visits
+from src.infra.db.repositories.elderly.sqls.by_gender import by_gender
+from src.infra.db.repositories.elderly.sqls.by_race import by_race
+from src.infra.db.repositories.elderly.sqls.creatinine import creatinine
+from src.infra.db.repositories.elderly.sqls.dentist_appointments import dentist_appointment
+from src.infra.db.repositories.elderly.sqls.get_elderly_base import get_elderly_base
+from src.infra.db.repositories.elderly.sqls.total import get_medical_cares
+from src.infra.db.repositories.elderly.sqls.total import get_total_card
+from src.infra.db.repositories.elderly.sqls.total import get_total_ubs
+from src.infra.db.repositories.elderly.sqls.height_records import height_records
+from src.infra.db.repositories.elderly.sqls.influenza_vaccines import influenza_vaccines
+from src.infra.db.repositories.elderly.sqls.ivcf_20 import ivcf_20
+from src.infra.db.repositories.elderly.sqls.medical_appointments import medical_appointments
+from src.infra.db.repositories.elderly.sqls.nominal_download import nominal_download
 from src.infra.db.repositories.utils.str_utils import anonymize_data_frame
 from src.infra.db.settings.connection_local import DBConnectionHandler
 
