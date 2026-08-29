@@ -32,96 +32,64 @@ from src.infra.db.settings.connection_local import DBConnectionHandler
 
 class ElderlyRepository:
     """Leitura para indicadores e listas de idosos."""
+
     def __init__(self):
-        self.mock_data = getenv("MOCK", False, False) == 'True'
+        self.mock_data = getenv("MOCK", False, False) == "True"
+
+    def _execute(self, sql: str):
+        con = duckdb.connect()
+        return con.sql(sql).fetchall()
 
     def total_ubs(self, cnes: int = None, equipe: int = None):
         """Retorna totais por UBS para idosos."""
-        sql = get_total_ubs(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(get_total_ubs(cnes, equipe))
 
     def total_card(self, cnes: int = None, equipe: int = None):
-            """Retorna totais agrupado por localização."""
-            sql = get_total_card(cnes,equipe)
-            con = duckdb.connect()
-            result = con.sql(sql).fetchall()
-            return result
-
+        """Retorna totais agrupado por localização."""
+        return self._execute(get_total_card(cnes, equipe))
 
     def total_medical_cares(self, cnes: int = None, equipe: int = None):
         """Total de atendimentos médicos a idosos."""
-        sql = get_medical_cares(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(get_medical_cares(cnes, equipe))
 
     def by_gender(self, cnes: int = None, equipe: int = None):
         """Distribuição por sexo entre idosos."""
-        sql = by_gender(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        if len(result) > 0 and '100' in result[0][0]:
-            result = [list(result[2:])+list(result[:2]) ][0]
+        result = self._execute(by_gender(cnes, equipe))
+        if len(result) > 0 and "100" in result[0][0]:
+            result = [list(result[2:]) + list(result[:2])][0]
         return result
 
     def by_race(self, cnes: int = None, equipe: int = None):
         """Distribuição por raça/cor entre idosos."""
-        sql = by_race(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(by_race(cnes, equipe))
 
     def medical_appointment(self, cnes: int = None, equipe: int = None):
         """Consultas médicas realizadas com idosos."""
-        sql = medical_appointments(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(medical_appointments(cnes, equipe))
 
     def height_records(self, cnes: int = None, equipe: int = None):
         """Registros de altura no acompanhamento do idoso."""
-        sql = height_records(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(height_records(cnes, equipe))
 
     def acs_visits(self, cnes: int = None, equipe: int = None):
         """Visitas de ACS a idosos."""
-        sql = acs_visits(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(acs_visits(cnes, equipe))
 
     def creatinine(self, cnes: int = None, equipe: int = None):
         """Exames de creatinina e datas relacionadas para idosos."""
-        sql = creatinine(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(creatinine(cnes, equipe))
 
     def dentist_appointment(self, cnes: int = None, equipe: int = None):
         """Atendimentos odontológicos com idosos."""
-        sql = dentist_appointment(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(dentist_appointment(cnes, equipe))
 
     def ivcf_20(self, cnes: int = None, equipe: int = None):
         """Indicador IVCF-20 (fragilidade) para idosos."""
-        sql = ivcf_20(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
+        return self._execute(ivcf_20(cnes, equipe))
 
     def influenza_vaccines(self, cnes: int = None, equipe: int = None):
         """Vacinação contra influenza em idosos."""
-        sql = influenza_vaccines(cnes,equipe)
-        con = duckdb.connect()
-        result = con.sql(sql).fetchall()
-        return result
-
+        return self._execute(influenza_vaccines(cnes, equipe))
 
     def find_filter_nominal(
         self,
@@ -132,7 +100,7 @@ class ElderlyRepository:
         cpf: str = None,
         equipe: int = None,
         query: str = None,
-        sort=[]
+        sort=[],
     ):
         """Retorna lista nominal (items e metadados de paginação).
 
@@ -173,47 +141,42 @@ class ElderlyRepository:
             sql_or += " OR ".join(or_conditions)
             where_clause += [f"({sql_or})"]
 
+        offset = max(0, page - 1) * pagesize
+        limit = pagesize
+
         if len(where_clause) > 0:
-            offset = max(0, page - 1) * pagesize
-            limit = pagesize
-            sql_where = " AND ".join(where_clause)
-            sql_where = f" WHERE {sql_where}"
-        if len(where_clause)>0:
-            offset = max(0, page - 1) * pagesize
-            limit = pagesize
             sql_where = " AND ".join(where_clause)
             sql_where = f" WHERE {sql_where}"
 
-        order = ''
+        order = ""
         order_list = []
         mapped_columns = {
-            'name': 'nome',
-            'cpf':'cpf',
-            'cns': 'cns',
-            'idade': 'idade',
-            'sexo': 'sexo',
-            'equipe': 'nome_equipe',
-            'micro_area': 'micro_area'
+            "name": "nome",
+            "cpf": "cpf",
+            "cns": "cns",
+            "idade": "idade",
+            "sexo": "sexo",
+            "equipe": "nome_equipe",
+            "micro_area": "micro_area",
         }
         if len(sort) > 0:
             for s in sort:
                 filter = json.loads(s)
-                if filter["field"] not in mapped_columns: continue
+                if filter["field"] not in mapped_columns:
+                    continue
 
-                direction = filter['direction'] if 'direction' in filter else'asc'
+                direction = filter["direction"] if "direction" in filter else "asc"
                 columns = mapped_columns[filter["field"]]
-                order_list.append( f'{columns} {direction}')
+                order_list.append(f"{columns} {direction}")
         else:
-            order_list = ['nome asc']
+            order_list = ["nome asc"]
 
-        if len(order_list)>0:
-            order = 'order by '
+        if len(order_list) > 0:
+            order = "order by "
             order += ", ".join(order_list)
 
         users = con.sql(
-            pessoas_sql
-            + sql_where
-            + f"  {order} LIMIT {limit} OFFSET {offset} "
+            pessoas_sql + sql_where + f"  {order} LIMIT {limit} OFFSET {offset} "
         ).df()
 
         users = users.to_dict(orient="records")
@@ -228,8 +191,8 @@ class ElderlyRepository:
 
     def find_all_download(self, cnes: int = None, equipe: int = None):
         """Gera DataFrame para exportação com anonimização de dados."""
-        sql = nominal_download(cnes,equipe)
+        sql = nominal_download(cnes, equipe)
         con = duckdb.connect()
         response = con.sql(sql).df()
-        response=response.apply(anonymize_data_frame, axis=1)
+        response = response.apply(anonymize_data_frame, axis=1)
         return response
